@@ -1,9 +1,9 @@
 # TODOs:
 ## Protocols
 ### USB :
-- [ ] Power down from 5V to 3.3 V for microcontroller
-- [ ] Implement basic USB keyboard firmware
-- [ ] Figure out endpoints needed for generic USB keyboard driver
+- [x] Power down from 5V to 3.3 V for microcontroller - Used buck and boost converter
+- [ ] Implement basic USB keyboard firmware - In progress - figure Grainuum USB, software USB implementation
+- [ ] Figure out endpoints needed for generic USB keyboard driver - HID device
 - [ ] Sending character streams to host device (macro keys)
 
 ### I2C
@@ -12,10 +12,10 @@
 - [ ] Change image when interrupt is recieved
 
 ### Timer
-- [ ] Run a timer on above chip to count down from 10
+- [ ] Run a timer on above chip to count down from 10 to 0
 
 ### Firmware
-- [ ] Isolate keys from certain locations
+- [ ] Isolate keys from certain locations - use MUX?
 - [ ] Sending character streams to host device  via USB interface (macro keys)
 
 
