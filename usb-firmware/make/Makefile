@@ -33,7 +33,9 @@ INCLUDES += \
 
 SRCS += \
   ../main.c \
-  ../startup_samd10.c
+  ../startup_samd10.c \
+  ../grainuum/grainuum-phy.c \
+  ../grainuum/grainuum-state.c \
 
 DEFINES += \
   -D__SAMD10D14AM__ \
@@ -44,11 +46,11 @@ CFLAGS += $(INCLUDES) $(DEFINES)
 
 OBJS = $(addprefix $(BUILD)/, $(notdir %/$(subst .c,.o, $(SRCS))))
 
-all: directory $(BUILD)/$(BIN).elf $(BUILD)/$(BIN).hex $(BUILD)/$(BIN).bin size
+all: directory grainuum $(BUILD)/$(BIN).elf $(BUILD)/$(BIN).hex $(BUILD)/$(BIN).bin size
 
 $(BUILD)/$(BIN).elf: $(OBJS)
 	@echo LD $@
-	@$(CC) $(LDFLAGS) $(OBJS) $(LIBS) -o $@
+	@$(CC) $(LDFLAGS) $(OBJS) build/grainuum-phy-ll.o $(LIBS) -o $@
 
 $(BUILD)/$(BIN).hex: $(BUILD)/$(BIN).elf
 	@echo OBJCOPY $@
@@ -58,9 +60,13 @@ $(BUILD)/$(BIN).bin: $(BUILD)/$(BIN).elf
 	@echo OBJCOPY $@
 	@$(OBJCOPY) -O binary $^ $@
 
-%.o: 
+%.o:
 	@echo CC $@
 	@$(CC) $(CFLAGS) $(filter %/$(subst .o,.c,$(notdir $@)), $(SRCS)) -c -o $@
+
+grainuum:
+	@echo CC grainuum-phy-ll.o
+	@$(CC) $(CFLAGS) ../grainuum/grainuum-phy-ll.s -c -o $(BUILD)/grainuum-phy-ll.o
 
 directory:
 	@$(MKDIR) -p $(BUILD)

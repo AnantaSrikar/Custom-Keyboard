@@ -1,6 +1,0 @@
-{
-	"files.associations": {
-		"hal_gpio.h": "c",
-		"samd10.h": "c"
-	}
-}
