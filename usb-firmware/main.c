@@ -122,6 +122,7 @@ static struct GrainuumUSB defaultUsbPhy = {
 
 static void set_usb_config_num(struct GrainuumUSB *usb, int configNum)
 {
+  uart_puts("\r\nIn set_usb_config_num\r\n");
   (void)usb;
   (void)configNum;
   ;
@@ -221,6 +222,8 @@ static const struct usb_configuration_descriptor configuration_descriptor = {
 static uint32_t str_buf_storage[USB_STR_BUF_LEN / sizeof(uint32_t)];
 static int send_string_descriptor(const char *str, const void **data)
 {
+
+  uart_puts("\r\nIn send_string_descriptor\r\n");
   int len;
   int max_len;
   uint8_t *str_buf = (uint8_t *)str_buf_storage;
@@ -251,6 +254,8 @@ static int get_string_descriptor(struct GrainuumUSB *usb,
                                  uint32_t num,
                                  const void **data)
 {
+
+  uart_puts("\r\nIn get_string_descriptor\r\n");
 
   static const uint8_t en_us[] = {0x04, DT_STRING, 0x09, 0x04};
 
@@ -289,6 +294,8 @@ static int get_device_descriptor(struct GrainuumUSB *usb,
                                  const void **data)
 {
 
+  uart_puts("\r\nIn get_device_descriptor\r\n");
+
   (void)usb;
 
   if (num == 0)
@@ -303,6 +310,8 @@ static int get_hid_report_descriptor(struct GrainuumUSB *usb,
                                      uint32_t num,
                                      const void **data)
 {
+
+  uart_puts("\r\nIn get_hid_report_descriptor\r\n");
 
   (void)usb;
 
@@ -320,6 +329,8 @@ static int get_configuration_descriptor(struct GrainuumUSB *usb,
                                         const void **data)
 {
 
+  uart_puts("\r\nIn get_configuration_descriptor\r\n");
+
   (void)usb;
 
   if (num == 0)
@@ -334,6 +345,8 @@ static int get_descriptor(struct GrainuumUSB *usb,
                           const void *packet,
                           const void **response)
 {
+
+  uart_puts("\r\nIn get_descriptor\r\n");
 
   const struct usb_setup_packet *setup = packet;
 
@@ -364,6 +377,8 @@ static void *get_usb_rx_buffer(struct GrainuumUSB *usb,
                                uint8_t epNum,
                                int32_t *size)
 {
+
+  uart_puts("\r\nIn get_usb_rx_buffer\r\n");
   (void)usb;
   (void)epNum;
 
@@ -394,6 +409,7 @@ static int received_data(struct GrainuumUSB *usb,
 
 static int send_data_finished(struct GrainuumUSB *usb, int result)
 {
+  uart_puts("\r\nIn send_data_finished\r\n");
   (void)usb;
   (void)result;
 
@@ -418,9 +434,11 @@ int main(void)
   uart_puts("\r\nFirmware init!\n\r");
 
   grainuumInit(&defaultUsbPhy, &hid_link);
+  uart_puts("\r\nFirmware init complete, attempting disconnet!\r\n");
+
   grainuumDisconnect(&defaultUsbPhy);
 
-  uart_puts("\r\nFirmware online!\r\n");
+  uart_puts("\r\nFirmware must be online now!\r\n");
 
   while (1);
 
