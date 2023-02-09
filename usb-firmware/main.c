@@ -91,45 +91,6 @@ static void uart_puts(char *s)
     uart_putc(*s++);
 }
 
-// Timer2 for UART UART logging
-static void timer2_set_period(uint16_t i)
-{
-  TC2->COUNT16.CC[0].reg = (F_CPU / 1000ul / 256) * i;
-  TC2->COUNT16.COUNT.reg = 0;
-}
-
-// Timer2 init
-static void timer2_init(void)
-{
-  PM->APBCMASK.reg |= PM_APBCMASK_TC2;
-
-  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(TC2_GCLK_ID) |
-      GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN(0);
-
-  TC2->COUNT16.CTRLA.reg = TC_CTRLA_MODE_COUNT16 | TC_CTRLA_WAVEGEN_MFRQ |
-      TC_CTRLA_PRESCALER_DIV256 | TC_CTRLA_PRESCSYNC_RESYNC;
-
-  TC2->COUNT16.COUNT.reg = 0;
-
-  timer2_set_period(PERIOD_SLOW);
-
-  TC2->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;
-
-  TC2->COUNT16.INTENSET.reg = TC_INTENSET_MC(1);
-  NVIC_EnableIRQ(TC2_IRQn);
-}
-
-// Function to run the timer 2 interrupt request
-void irq_handler_tc2(void)
-{
-  if (TC2->COUNT16.INTFLAG.reg & TC_INTFLAG_MC(1))
-  {
-    uart_puts("\r\nNew Timer working perfectly\n\r");
-    TC2->COUNT16.INTFLAG.reg = TC_INTFLAG_MC(1);
-  }
-}
-
-
 // Very important, otherwise timings will be messed up
 static void sys_init(void)
 {
@@ -453,8 +414,6 @@ int main(void)
 {
   sys_init();
   uart_init(BAUD_RATE);
-
-  timer2_init();
 
   uart_puts("\r\nFirmware init!\n\r");
 
