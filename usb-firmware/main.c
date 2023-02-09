@@ -37,15 +37,105 @@
 // For Software based USB 
 #include "grainuum.h"
 
-//-----------------------------------------------------------------------------
 #define PERIOD_FAST     100
 #define PERIOD_SLOW     500
+#define BAUD_RATE 115200
 
 #define BUFFER_SIZE 8
 #define NUM_BUFFERS 4
 #define EP_INTERVAL_MS 6
 
+
+// GPIO pin setup
 HAL_GPIO_PIN(LED,      A, 5)
+HAL_GPIO_PIN(UART_TX,  A, 14)
+HAL_GPIO_PIN(UART_RX,  A, 15)
+
+// UART setup
+static void uart_init(uint32_t baud)
+{
+  uint64_t br = (uint64_t)65536 * (F_CPU - 16 * baud) / F_CPU;
+
+  HAL_GPIO_UART_TX_out();
+  HAL_GPIO_UART_TX_pmuxen(PORT_PMUX_PMUXE_C_Val);
+  HAL_GPIO_UART_RX_in();
+  HAL_GPIO_UART_RX_pmuxen(PORT_PMUX_PMUXE_C_Val);
+
+  PM->APBCMASK.reg |= PM_APBCMASK_SERCOM0;
+
+  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(SERCOM0_GCLK_ID_CORE) |
+      GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN(0);
+
+  SERCOM0->USART.CTRLA.reg =
+      SERCOM_USART_CTRLA_DORD | SERCOM_USART_CTRLA_MODE_USART_INT_CLK |
+      SERCOM_USART_CTRLA_RXPO(1/*PAD1*/) | SERCOM_USART_CTRLA_TXPO(0/*PAD0*/);
+
+  SERCOM0->USART.CTRLB.reg = SERCOM_USART_CTRLB_RXEN | SERCOM_USART_CTRLB_TXEN |
+      SERCOM_USART_CTRLB_CHSIZE(0/*8 bits*/);
+
+  SERCOM0->USART.BAUD.reg = (uint16_t)br+1;
+
+  SERCOM0->USART.CTRLA.reg |= SERCOM_USART_CTRLA_ENABLE;
+}
+
+static void uart_putc(char c)
+{
+  while (!(SERCOM0->USART.INTFLAG.reg & SERCOM_USART_INTFLAG_DRE));
+  SERCOM0->USART.DATA.reg = c;
+}
+
+//-----------------------------------------------------------------------------
+static void uart_puts(char *s)
+{
+  while (*s)
+    uart_putc(*s++);
+}
+
+// Timer2 for UART UART logging
+static void timer2_set_period(uint16_t i)
+{
+  TC2->COUNT16.CC[0].reg = (F_CPU / 1000ul / 256) * i;
+  TC2->COUNT16.COUNT.reg = 0;
+}
+
+// Timer2 init
+static void timer2_init(void)
+{
+  PM->APBCMASK.reg |= PM_APBCMASK_TC2;
+
+  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(TC2_GCLK_ID) |
+      GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN(0);
+
+  TC2->COUNT16.CTRLA.reg = TC_CTRLA_MODE_COUNT16 | TC_CTRLA_WAVEGEN_MFRQ |
+      TC_CTRLA_PRESCALER_DIV256 | TC_CTRLA_PRESCSYNC_RESYNC;
+
+  TC2->COUNT16.COUNT.reg = 0;
+
+  timer2_set_period(PERIOD_SLOW);
+
+  TC2->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;
+
+  TC2->COUNT16.INTENSET.reg = TC_INTENSET_MC(1);
+  NVIC_EnableIRQ(TC2_IRQn);
+}
+
+// Function to run the timer 2 interrupt request
+void irq_handler_tc2(void)
+{
+  if (TC2->COUNT16.INTFLAG.reg & TC_INTFLAG_MC(1))
+  {
+    uart_puts("\r\nNew Timer working perfectly\n\r");
+    TC2->COUNT16.INTFLAG.reg = TC_INTFLAG_MC(1);
+  }
+}
+
+
+// Very important, otherwise timings will be messed up
+static void sys_init(void)
+{
+  // Switch to 8MHz clock (disable prescaler)
+  SYSCTRL->OSC8M.bit.PRESC = 0;
+}
 
 // USB setup
 // USB port setup, PORT_PA04 and PORT_PA02
@@ -359,57 +449,19 @@ static struct GrainuumConfig hid_link = {
 
 static GRAINUUM_BUFFER(phy_queue, 8);
 
-
-//-----------------------------------------------------------------------------
-static void timer_set_period(uint16_t i)
-{
-  TC1->COUNT16.CC[0].reg = (F_CPU / 10000ul / 256) * i;
-  TC1->COUNT16.COUNT.reg = 0;
-}
-
-//-----------------------------------------------------------------------------
-void irq_handler_tc1(void)
-{
-  if (TC1->COUNT16.INTFLAG.reg & TC_INTFLAG_MC(1))
-  {
-    HAL_GPIO_LED_toggle();
-    TC1->COUNT16.INTFLAG.reg = TC_INTFLAG_MC(1);
-  }
-}
-
-//-----------------------------------------------------------------------------
-static void timer_init(void)
-{
-  PM->APBCMASK.reg |= PM_APBCMASK_TC1;
-
-  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID(TC1_GCLK_ID) |
-      GCLK_CLKCTRL_CLKEN | GCLK_CLKCTRL_GEN(0);
-
-  TC1->COUNT16.CTRLA.reg = TC_CTRLA_MODE_COUNT16 | TC_CTRLA_WAVEGEN_MFRQ |
-      TC_CTRLA_PRESCALER_DIV256 | TC_CTRLA_PRESCSYNC_RESYNC;
-
-  TC1->COUNT16.COUNT.reg = 0;
-
-  timer_set_period(PERIOD_FAST);
-
-  TC1->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;
-
-  TC1->COUNT16.INTENSET.reg = TC_INTENSET_MC(1);
-  NVIC_EnableIRQ(TC1_IRQn);
-}
-
-//-----------------------------------------------------------------------------
 int main(void)
 {
+  sys_init();
+  uart_init(BAUD_RATE);
+
+  timer2_init();
+
+  uart_puts("\r\nFirmware init!\n\r");
+
   grainuumInit(&defaultUsbPhy, &hid_link);
   grainuumDisconnect(&defaultUsbPhy);
-  
-  timer_init();
 
-  HAL_GPIO_LED_out();
-
-  // set INENs to 1
-  // PORT->PINCFG[4]
+  uart_puts("\r\nFirmware online!\r\n");
 
   while (1);
 

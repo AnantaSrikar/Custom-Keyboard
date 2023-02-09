@@ -15,6 +15,7 @@ else
   MKDIR = mkdir
 endif
 
+CFLAGS += -g3
 CFLAGS += -W -Wall --std=gnu99 -Os
 CFLAGS += -fno-diagnostics-show-caret
 CFLAGS += -fdata-sections -ffunction-sections
@@ -28,19 +29,19 @@ LDFLAGS += -Wl,--script=../linker/samd10d14.ld
 
 INCLUDES += \
   -I../include \
-  -I../grainuum \
-  -I..
+  -I.. \
+  -I../grainuum
 
 SRCS += \
   ../main.c \
   ../startup_samd10.c \
   ../grainuum/grainuum-phy.c \
-  ../grainuum/grainuum-state.c \
+  ../grainuum/grainuum-state.c
 
 DEFINES += \
-  -D__SAMD10D14AM__ \
+  -D__SAMD10C13A__ \
   -DDONT_USE_CMSIS_INIT \
-  -DF_CPU=8000000 
+  -DF_CPU=8000000
 
 CFLAGS += $(INCLUDES) $(DEFINES)
 
