@@ -45,13 +45,15 @@ DEFINES += \
 
 CFLAGS += $(INCLUDES) $(DEFINES)
 
+
+# Make a list from SRC.c to SRC.o
 OBJS = $(addprefix $(BUILD)/, $(notdir %/$(subst .c,.o, $(SRCS))))
 
-all: directory grainuum $(BUILD)/$(BIN).elf $(BUILD)/$(BIN).hex $(BUILD)/$(BIN).bin size
+all: directory $(BUILD)/grainuum-phy-ll.o $(BUILD)/$(BIN).elf $(BUILD)/$(BIN).hex $(BUILD)/$(BIN).bin size
 
-$(BUILD)/$(BIN).elf: $(OBJS)
+$(BUILD)/$(BIN).elf: $(OBJS) $(BUILD)/grainuum-phy-ll.o
 	@echo LD $@
-	@$(CC) $(LDFLAGS) $(OBJS) build/grainuum-phy-ll.o $(LIBS) -o $@
+	@$(CC) $(LDFLAGS) $(OBJS) $(BUILD)/grainuum-phy-ll.o $(LIBS) -o $@
 
 $(BUILD)/$(BIN).hex: $(BUILD)/$(BIN).elf
 	@echo OBJCOPY $@
@@ -65,9 +67,9 @@ $(BUILD)/$(BIN).bin: $(BUILD)/$(BIN).elf
 	@echo CC $@
 	@$(CC) $(CFLAGS) $(filter %/$(subst .o,.c,$(notdir $@)), $(SRCS)) -c -o $@
 
-grainuum:
+$(BUILD)/grainuum-phy-ll.o:
 	@echo CC grainuum-phy-ll.o
-	@$(CC) $(CFLAGS) ../grainuum/grainuum-phy-ll.s -c -o $(BUILD)/grainuum-phy-ll.o
+	@$(CC) $(CFLAGS) ../grainuum/grainuum-phy-ll.s -c -o $@
 
 directory:
 	@$(MKDIR) -p $(BUILD)
