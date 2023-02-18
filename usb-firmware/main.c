@@ -47,7 +47,6 @@
 
 
 // GPIO pin setup
-HAL_GPIO_PIN(LED,      A, 5)
 HAL_GPIO_PIN(UART_TX,  A, 14)
 HAL_GPIO_PIN(UART_RX,  A, 15)
 
@@ -103,7 +102,7 @@ static void sys_init(void)
 static struct GrainuumUSB defaultUsbPhy = {
 
     // PA04 as D+
-    .usbdpIAddr = (uint32_t)&PORT->Group[0].IN,
+    .usbdpIAddr = (uint32_t)&PORT->Group[0].DIR,
     .usbdpSAddr = (uint32_t)&PORT->Group[0].OUT,
     .usbdpCAddr = (uint32_t)&PORT->Group[0].OUTCLR,
     .usbdpDAddr = (uint32_t)&PORT->Group[0].DIR,
@@ -111,7 +110,7 @@ static struct GrainuumUSB defaultUsbPhy = {
     .usbdpShift = 4,
 
     // PA02 as D-
-    .usbdnIAddr = (uint32_t)&PORT->Group[0].IN,
+    .usbdnIAddr = (uint32_t)&PORT->Group[0].DIR,
     .usbdnSAddr = (uint32_t)&PORT->Group[0].OUT,
     .usbdnCAddr = (uint32_t)&PORT->Group[0].OUTCLR,
     .usbdnDAddr = (uint32_t)&PORT->Group[0].DIR,
@@ -436,7 +435,7 @@ int main(void)
   grainuumInit(&defaultUsbPhy, &hid_link);
   uart_puts("\r\nFirmware init complete, attempting disconnet!\r\n");
 
-  grainuumDisconnect(&defaultUsbPhy);
+  grainuumConnect(&defaultUsbPhy);
 
   uart_puts("\r\nFirmware must be online now!\r\n");
 
