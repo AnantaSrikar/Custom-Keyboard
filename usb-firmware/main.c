@@ -102,16 +102,16 @@ static void sys_init(void)
 static struct GrainuumUSB defaultUsbPhy = {
 
     // PA04 as D+
-    .usbdpIAddr = (uint32_t)&PORT->Group[0].DIR,
-    .usbdpSAddr = (uint32_t)&PORT->Group[0].OUT,
+    .usbdpIAddr = (uint32_t)&PORT->Group[0].IN,
+    .usbdpSAddr = (uint32_t)&PORT->Group[0].OUTSET,
     .usbdpCAddr = (uint32_t)&PORT->Group[0].OUTCLR,
     .usbdpDAddr = (uint32_t)&PORT->Group[0].DIR,
     .usbdpMask = (1 << 4),
     .usbdpShift = 4,
 
     // PA02 as D-
-    .usbdnIAddr = (uint32_t)&PORT->Group[0].DIR,
-    .usbdnSAddr = (uint32_t)&PORT->Group[0].OUT,
+    .usbdnIAddr = (uint32_t)&PORT->Group[0].IN,
+    .usbdnSAddr = (uint32_t)&PORT->Group[0].OUTSET,
     .usbdnCAddr = (uint32_t)&PORT->Group[0].OUTCLR,
     .usbdnDAddr = (uint32_t)&PORT->Group[0].DIR,
     .usbdnMask = (1 << 2),
@@ -425,6 +425,21 @@ static struct GrainuumConfig hid_link = {
 
 static GRAINUUM_BUFFER(phy_queue, 8);
 
+static void process_all_usb_events(struct GrainuumUSB *usb)
+{
+  while (!GRAINUUM_BUFFER_IS_EMPTY(phy_queue))
+  {
+    uart_puts("\r\nSomething is happening ig\r\n");
+    uint8_t *in_ptr = (uint8_t *)GRAINUUM_BUFFER_TOP(phy_queue);
+
+    // Advance to the next packet (allowing us to be reentrant)
+    GRAINUUM_BUFFER_REMOVE(phy_queue);
+
+    // Process the current packet
+    grainuumProcess(usb, in_ptr);
+  }
+}
+
 int main(void)
 {
   sys_init();
@@ -440,7 +455,14 @@ int main(void)
 
   uart_puts("\r\nFirmware must be online now!\r\n");
 
-  while (1);
+  while (1)
+  {
+    process_all_usb_events(&defaultUsbPhy);
+    if (rx_buffer_head != rx_buffer_tail)
+    {
+        uart_puts("\r\nSomething is happening in main ig\r\n");
+    }
+  }
 
   return 0;
 }
