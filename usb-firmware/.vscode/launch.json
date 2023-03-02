@@ -1,0 +1,15 @@
+{
+	"configurations": [
+	{
+		"cwd": "${workspaceFolder}",
+		"executable": "${workspaceFolder}/make/build/USB.elf",
+		"name": "BMP",
+		"request": "launch",
+		"type": "cortex-debug",
+		"runToEntryPoint": "main",
+		"showDevDebugOutput": "none",
+		"servertype": "bmp",
+		"BMPGDBSerialPort": "/dev/bmp-gdb",
+	}
+	]
+}

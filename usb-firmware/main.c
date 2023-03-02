@@ -435,6 +435,7 @@ int main(void)
   grainuumInit(&defaultUsbPhy, &hid_link);
   uart_puts("\r\nFirmware init complete, attempting disconnet!\r\n");
 
+  grainuumDisconnect(&defaultUsbPhy);
   grainuumConnect(&defaultUsbPhy);
 
   uart_puts("\r\nFirmware must be online now!\r\n");
